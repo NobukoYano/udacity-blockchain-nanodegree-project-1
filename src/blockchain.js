@@ -78,7 +78,16 @@ class Blockchain {
                 // Update blockchain
                 self.height = block.height;
                 self.chain.push(block);
-                resolve(block);
+
+                // Verify the chain is valid <-- Do I need this?
+                const errors = await self.validateChain();
+
+                if (errors.length) {
+                    throw new Error("chainValidation error", errors);
+                } else {
+                    // Create the block and add it to the chain
+                    resolve(block);
+                }
 
             } catch (error) {
                 reject("Error on _addBlock");
@@ -129,21 +138,14 @@ class Blockchain {
                 let currentTime = parseInt(new Date().getTime().toString().slice(0, -3));
                 
                 // Check if the time elapsed is less than 5 minutes
-                if (Math.abs(currentTime -messageTime) >= 60 * 5) new Error ("time differs more than 5 min.");
+                if (Math.abs(currentTime -messageTime) >= 60 * 5) return new Error ("time differs more than 5 min.");
                 
                 // Veify the message with wallet address and signature
-                if (bitcoinMessage.verify(message, address, signature)) new Error ("Verification of wallet address and signature failed");
+                if (bitcoinMessage.verify(message, address, signature)) return new Error ("Verification of wallet address and signature failed");
                 
-                // Verify the chain is valid <-- Do I need this?
-                const errors = await self.validateChain();
-
-                if (errors.length) {
-                    throw new Error("chainValidation error", errors);
-                } else {
-                    // Create the block and add it to the chain
-                    let block = new BlockClass.Block({owner:address, star});
-                    resolve(self._addBlock(block));
-                }
+                // Create the block and add it to the chain
+                let block = new BlockClass.Block({owner:address, star});
+                resolve(self._addBlock(block));
 
             } catch (error) {
                 reject(error);
